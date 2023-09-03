@@ -55,11 +55,6 @@ fun ScreenMain() {
     ) {
         Button(
             onClick = {
-                Log.d("CHECK_PERMISSION", "${cameraPermissionState.hasPermission}")
-                Log.d("CHECK_PERMISSION", "${cameraPermissionState.shouldShowRationale}")
-                Log.d("CHECK_PERMISSION", "${cameraPermissionState.permissionRequested}")
-                Log.d("CHECK_PERMISSION", "${isPermissionDeniedOnce}")
-                Log.d("CHECK_PERMISSION", "${isPermissionDeniedTwice}")
                 if (cameraPermissionState.hasPermission) {
                     Log.d("CHECK_PERMISSION", "GO TO NEXT SCREEN")
                 } else {
