@@ -2,10 +2,13 @@ package com.composecamerax.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import android.view.ScaleGestureDetector
 import android.view.ViewGroup
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -17,7 +20,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
+import com.google.mlkit.vision.barcode.BarcodeScanner
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
+import java.util.concurrent.Executors
 
+@androidx.camera.core.ExperimentalGetImage
 @Composable
 fun ScreenCamera() {
     // TODO : to implement
@@ -30,6 +40,7 @@ fun ScreenCamera() {
 }
 
 @SuppressLint("ClickableViewAccessibility")
+@androidx.camera.core.ExperimentalGetImage
 @Composable
 private fun CameraView() {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -37,6 +48,7 @@ private fun CameraView() {
 
     Column {
         AndroidView(factory = { context ->
+
             // Initialize Camera preview
             val previewView = getPreviewView(context)
             val preview = Preview.Builder().build().also {
@@ -46,7 +58,8 @@ private fun CameraView() {
             camera = getCameraProvider(context).bindToLifecycle(
                 lifecycleOwner,
                 CameraSelector.DEFAULT_BACK_CAMERA,
-                preview
+                preview,
+                getAnalysisUserCase()
             )
 
             // Set Camera interactions
@@ -85,3 +98,55 @@ private fun getCameraProvider(context: Context) =
     ProcessCameraProvider.getInstance(context).get().also {
         it.unbindAll()
     }
+
+
+private fun getBarcodeScanner(): BarcodeScanner {
+    val options = BarcodeScannerOptions.Builder().setBarcodeFormats(
+        Barcode.FORMAT_QR_CODE
+    ).build()
+    return BarcodeScanning.getClient(options)
+}
+
+@androidx.camera.core.ExperimentalGetImage
+private fun getAnalysisUserCase(): ImageAnalysis {
+    val options = BarcodeScannerOptions.Builder().setBarcodeFormats(
+        Barcode.FORMAT_QR_CODE
+    ).build()
+
+    val scanner = BarcodeScanning.getClient(options)
+
+    val analysisUseCase = ImageAnalysis.Builder().build().also {
+        it.setAnalyzer(
+            Executors.newSingleThreadExecutor()
+        ) { imageProxy ->
+            processImageProxy(scanner, imageProxy)
+        }
+    }
+    return analysisUseCase
+}
+
+@androidx.camera.core.ExperimentalGetImage
+private fun processImageProxy(
+    scanner: BarcodeScanner,
+    imageProxy: ImageProxy
+) {
+    imageProxy.image?.let {
+        val inputImage = InputImage.fromMediaImage(
+            it,
+            imageProxy.imageInfo.rotationDegrees
+        )
+
+        scanner.process(inputImage)
+            .addOnSuccessListener { barcodeList ->
+                barcodeList.forEach {
+                    Log.d("BARCODE", "Value : ${it.rawValue}")
+                }
+            }.addOnFailureListener { exception ->
+                Log.d("BARCODE", "Error : ${exception.localizedMessage}")
+                exception.printStackTrace()
+            }.addOnCompleteListener {
+                imageProxy.image?.close()
+                imageProxy.close()
+            }
+    }
+}

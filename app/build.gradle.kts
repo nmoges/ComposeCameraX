@@ -76,4 +76,6 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.2.3")
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.2")
+    // ML Kit barcode
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
 }
