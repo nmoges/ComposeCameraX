@@ -2,7 +2,6 @@ package com.composecamerax.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import android.view.ScaleGestureDetector
 import android.view.ViewGroup
 import androidx.camera.core.Camera
@@ -12,37 +11,50 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import org.koin.androidx.compose.koinViewModel
 import java.util.concurrent.Executors
 
 @androidx.camera.core.ExperimentalGetImage
 @Composable
-fun ScreenCamera() {
-    // TODO : to implement
+fun ScreenCamera(viewModel: ScreenCameraViewModel = koinViewModel()) {
+    val bitmapQrCode = viewModel.bitmapQrCode.collectAsState()
+
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.BottomCenter
+        contentAlignment = Alignment.Center
     ) {
-        CameraView()
+        CameraView(viewModel)
+        bitmapQrCode.value?.let { imageBitmap ->
+            Image(
+                bitmap = imageBitmap,
+                contentDescription = "",
+                modifier = Modifier.size(200.dp)
+            )
+        }
     }
 }
 
 @SuppressLint("ClickableViewAccessibility")
 @androidx.camera.core.ExperimentalGetImage
 @Composable
-private fun CameraView() {
+private fun CameraView(viewModel: ScreenCameraViewModel) {
     val lifecycleOwner = LocalLifecycleOwner.current
     lateinit var camera: Camera
 
@@ -59,7 +71,7 @@ private fun CameraView() {
                 lifecycleOwner,
                 CameraSelector.DEFAULT_BACK_CAMERA,
                 preview,
-                getAnalysisUserCase()
+                getAnalysisUserCase(viewModel)
             )
 
             // Set Camera interactions
@@ -99,16 +111,8 @@ private fun getCameraProvider(context: Context) =
         it.unbindAll()
     }
 
-
-private fun getBarcodeScanner(): BarcodeScanner {
-    val options = BarcodeScannerOptions.Builder().setBarcodeFormats(
-        Barcode.FORMAT_QR_CODE
-    ).build()
-    return BarcodeScanning.getClient(options)
-}
-
 @androidx.camera.core.ExperimentalGetImage
-private fun getAnalysisUserCase(): ImageAnalysis {
+private fun getAnalysisUserCase(viewModel: ScreenCameraViewModel): ImageAnalysis {
     val options = BarcodeScannerOptions.Builder().setBarcodeFormats(
         Barcode.FORMAT_QR_CODE
     ).build()
@@ -119,30 +123,28 @@ private fun getAnalysisUserCase(): ImageAnalysis {
         it.setAnalyzer(
             Executors.newSingleThreadExecutor()
         ) { imageProxy ->
-            processImageProxy(scanner, imageProxy)
+            processImageProxy(scanner, imageProxy, viewModel)
         }
     }
+
     return analysisUseCase
 }
 
 @androidx.camera.core.ExperimentalGetImage
 private fun processImageProxy(
     scanner: BarcodeScanner,
-    imageProxy: ImageProxy
+    imageProxy: ImageProxy,
+    viewModel: ScreenCameraViewModel
 ) {
     imageProxy.image?.let {
-        val inputImage = InputImage.fromMediaImage(
-            it,
-            imageProxy.imageInfo.rotationDegrees
-        )
-
+        val inputImage = InputImage.fromMediaImage(it, imageProxy.imageInfo.rotationDegrees)
         scanner.process(inputImage)
             .addOnSuccessListener { barcodeList ->
-                barcodeList.forEach {
-                    Log.d("BARCODE", "Value : ${it.rawValue}")
+                if (barcodeList.isNotEmpty()) {
+                    val barcode = barcodeList[0]
+                    barcode.rawValue?.let { rawData -> viewModel.generateBitmap(rawData) }
                 }
             }.addOnFailureListener { exception ->
-                Log.d("BARCODE", "Error : ${exception.localizedMessage}")
                 exception.printStackTrace()
             }.addOnCompleteListener {
                 imageProxy.image?.close()

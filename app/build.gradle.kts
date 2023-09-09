@@ -78,4 +78,9 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.2")
     // ML Kit barcode
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    // Zxing
+    implementation("com.journeyapps:zxing-android-embedded:4.1.0")
+    // Koin
+    implementation("io.insert-koin:koin-android:3.4.3")
+    implementation("io.insert-koin:koin-androidx-compose:3.4.3")
 }
