@@ -2,7 +2,7 @@ package com.composecamerax.ui.screens
 
 import android.Manifest
 import android.content.Intent
-import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,7 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,7 +29,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun ScreenMain() {
+fun ScreenMain(onClick: () -> Unit) {
     var isPermissionDeniedOnce by rememberSaveable { mutableStateOf(false) }
     var isPermissionDeniedTwice by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
@@ -55,14 +54,14 @@ fun ScreenMain() {
     ) {
         Button(
             onClick = {
-                if (cameraPermissionState.hasPermission) {
-                    Log.d("CHECK_PERMISSION", "GO TO NEXT SCREEN")
-                } else {
+                if (cameraPermissionState.hasPermission.not()) {
                     if (isPermissionDeniedTwice.not()) {
                         cameraPermissionState.launchPermissionRequest()
                     } else {
                         context.startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
                     }
+                } else {
+                    Toast.makeText(context, "Has already permission", Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier
@@ -74,7 +73,9 @@ fun ScreenMain() {
         Spacer(modifier = Modifier.padding(top = 10.dp))
         Button(
             onClick = {
-
+                if (cameraPermissionState.hasPermission) {
+                    onClick.invoke()
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -89,6 +90,6 @@ fun ScreenMain() {
 @Composable
 private fun PreviewMainScreen() {
     ComposeCameraXTheme {
-        ScreenMain()
+        ScreenMain { }
     }
 }

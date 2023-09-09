@@ -3,15 +3,21 @@ package com.composecamerax
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.composecamerax.ui.screens.ScreenMain
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
+import com.composecamerax.navigation.Navigation
 import com.composecamerax.ui.theme.ComposeCameraXTheme
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var navHostController: NavHostController
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             ComposeCameraXTheme {
-                ScreenMain()
+                navHostController = rememberNavController()
+                Navigation(navHostController = this.navHostController)
             }
         }
     }
