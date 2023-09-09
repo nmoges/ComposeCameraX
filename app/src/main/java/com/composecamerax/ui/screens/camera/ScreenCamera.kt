@@ -1,7 +1,8 @@
-package com.composecamerax.ui.screens
+package com.composecamerax.ui.screens.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import android.view.ScaleGestureDetector
 import android.view.ViewGroup
 import androidx.camera.core.Camera
@@ -12,10 +13,18 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -33,7 +42,7 @@ import java.util.concurrent.Executors
 
 @androidx.camera.core.ExperimentalGetImage
 @Composable
-fun ScreenCamera(viewModel: ScreenCameraViewModel = koinViewModel()) {
+fun ScreenCamera(viewModel: ScreenCameraViewModel = koinViewModel(), onClick: () -> Unit) {
     val bitmapQrCode = viewModel.bitmapQrCode.collectAsState()
 
     Box(
@@ -42,11 +51,36 @@ fun ScreenCamera(viewModel: ScreenCameraViewModel = koinViewModel()) {
     ) {
         CameraView(viewModel)
         bitmapQrCode.value?.let { imageBitmap ->
-            Image(
-                bitmap = imageBitmap,
-                contentDescription = "",
-                modifier = Modifier.size(200.dp)
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Image(
+                    bitmap = imageBitmap,
+                    contentDescription = "",
+                    modifier = Modifier.size(200.dp)
+                )
+                Spacer(modifier = Modifier.padding(top = 10.dp))
+                Row {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "",
+                        modifier = Modifier
+                            .size(25.dp)
+                            .clickable {
+                                viewModel.clearBitmap()
+                            }
+                    )
+                    Spacer(modifier = Modifier.padding(10.dp))
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "",
+                        modifier = Modifier
+                            .size(25.dp)
+                            .clickable {
+                                viewModel.clearBitmap()
+                                onClick.invoke()
+                            }
+                    )
+                }
+            }
         }
     }
 }
@@ -142,6 +176,7 @@ private fun processImageProxy(
             .addOnSuccessListener { barcodeList ->
                 if (barcodeList.isNotEmpty()) {
                     val barcode = barcodeList[0]
+                    Log.d("BARCODE", "TYpe : ${barcode.valueType}")
                     barcode.rawValue?.let { rawData -> viewModel.generateBitmap(rawData) }
                 }
             }.addOnFailureListener { exception ->

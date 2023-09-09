@@ -1,4 +1,4 @@
-package com.composecamerax.ui.screens
+package com.composecamerax.ui.screens.camera
 
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.ImageBitmap
@@ -12,6 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 
 class ScreenCameraViewModel: ViewModel() {
 
+    private val _rawData: MutableStateFlow<String?> = MutableStateFlow(null)
+    val rawData: StateFlow<String?>
+        get() = _rawData
+
     private val _bitmapQrCode: MutableStateFlow<ImageBitmap?> = MutableStateFlow(null)
     val bitmapQrCode: StateFlow<ImageBitmap?>
         get() = _bitmapQrCode
@@ -21,6 +25,11 @@ class ScreenCameraViewModel: ViewModel() {
         val bitMatrix = multiFormatWriter.encode(rawData, BarcodeFormat.QR_CODE, 200, 200)
         val barcodeEncoder = BarcodeEncoder()
         val bitmap = barcodeEncoder.createBitmap(bitMatrix)
+        _rawData.value = rawData
         _bitmapQrCode.value = bitmap.asImageBitmap()
+    }
+
+    fun clearBitmap() {
+        _bitmapQrCode.value = null
     }
 }
