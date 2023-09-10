@@ -2,7 +2,6 @@ package com.composecamerax.ui.screens.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import android.view.ScaleGestureDetector
 import android.view.ViewGroup
 import androidx.camera.core.Camera
@@ -25,10 +24,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -43,39 +44,46 @@ import java.util.concurrent.Executors
 @androidx.camera.core.ExperimentalGetImage
 @Composable
 fun ScreenCamera(viewModel: ScreenCameraViewModel = koinViewModel(), onClick: () -> Unit) {
-    val bitmapQrCode = viewModel.bitmapQrCode.collectAsState()
+    val barcode = viewModel.barcode.collectAsState()
 
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         CameraView(viewModel)
-        bitmapQrCode.value?.let { imageBitmap ->
+        barcode.value?.let { barcode ->
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Image(
-                    bitmap = imageBitmap,
+                    bitmap = viewModel.generateBitmap(),
                     contentDescription = "",
                     modifier = Modifier.size(200.dp)
                 )
-                Spacer(modifier = Modifier.padding(top = 10.dp))
+                Spacer(modifier = Modifier.padding(top = 15.dp))
+                Text(
+                    text = "Data : ${barcode.rawValue}",
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.padding(top = 15.dp))
                 Row {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "",
+                        tint = Color.White,
                         modifier = Modifier
                             .size(25.dp)
                             .clickable {
-                                viewModel.clearBitmap()
+                                viewModel.updateBarcode(null)
                             }
                     )
                     Spacer(modifier = Modifier.padding(10.dp))
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "",
+                        tint = Color.White,
                         modifier = Modifier
                             .size(25.dp)
                             .clickable {
-                                viewModel.clearBitmap()
+                                viewModel.updateBarcode(null)
                                 onClick.invoke()
                             }
                     )
@@ -176,8 +184,8 @@ private fun processImageProxy(
             .addOnSuccessListener { barcodeList ->
                 if (barcodeList.isNotEmpty()) {
                     val barcode = barcodeList[0]
-                    Log.d("BARCODE", "TYpe : ${barcode.valueType}")
-                    barcode.rawValue?.let { rawData -> viewModel.generateBitmap(rawData) }
+//                    barcode.rawValue?.let { rawData -> viewModel.updateBarcode(barcode) }
+                    viewModel.updateBarcode(barcode)
                 }
             }.addOnFailureListener { exception ->
                 exception.printStackTrace()
